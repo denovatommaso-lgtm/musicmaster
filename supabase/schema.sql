@@ -103,7 +103,10 @@ create policy "profiles_select_own"
   for select
   using (auth.uid() = id);
 
-create policy "profiles_insert_own"
+drop policy if exists "profiles_insert_own" on public.profiles;
+drop policy if exists "Users can insert own profile" on public.profiles;
+
+create policy "Users can insert own profile"
   on public.profiles
   for insert
   with check (auth.uid() = id);

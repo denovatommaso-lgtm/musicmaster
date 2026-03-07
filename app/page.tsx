@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   const notes = [
     { symbol: "♪", classes: "left-[8%] top-[14%] text-primary/70" },
@@ -63,18 +65,18 @@ export default function Home() {
                 >
                   Play Now
                 </a>
-                <a
-                  href="#login"
+                <Link
+                  href="/login"
                   className="inline-flex min-h-14 items-center justify-center rounded-full border border-white/15 bg-card px-8 text-base font-semibold text-white backdrop-blur transition-colors duration-200 hover:bg-card2"
                 >
                   Login
-                </a>
-                <a
-                  href="#signup"
+                </Link>
+                <Link
+                  href="/signup"
                   className="inline-flex min-h-14 items-center justify-center rounded-full border border-green/30 bg-green/10 px-8 text-base font-semibold text-green transition-colors duration-200 hover:bg-green/20"
                 >
                   Sign Up
-                </a>
+                </Link>
               </div>
             </div>
 

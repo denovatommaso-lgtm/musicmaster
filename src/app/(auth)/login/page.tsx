@@ -2,11 +2,12 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/src/lib/supabase";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -17,19 +18,43 @@ export default function LoginPage() {
     setError("");
     setIsLoading(true);
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error: signInError } = await supabase.auth.signInWithPassword(
+        {
+          email,
+          password,
+        },
+      );
 
-    if (signInError) {
-      setError(signInError.message);
+      console.log("MusicMaster login result", {
+        userId: data.user?.id,
+        hasSession: Boolean(data.session),
+        error: signInError?.message ?? null,
+      });
+
+      if (signInError) {
+        setError(signInError.message);
+        return;
+      }
+
+      if (!data.session) {
+        setError("Login succeeded, but no active session was created.");
+        return;
+      }
+
+      const destination = searchParams.get("next") || "/dashboard";
+      router.replace(destination);
+      router.refresh();
+    } catch (unknownError) {
+      const message =
+        unknownError instanceof Error
+          ? unknownError.message
+          : "Something went wrong while logging in.";
+      console.error("MusicMaster login failed", unknownError);
+      setError(message);
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    router.replace("/dashboard");
-    router.refresh();
   }
 
   return (

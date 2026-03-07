@@ -49,14 +49,22 @@ export default function SignupPage() {
       return;
     }
 
-    const { error: profileError } = await supabase.from("profiles").upsert({
-      id: user.id,
-      email: user.email ?? email,
-      username,
+    const profileResponse = await fetch("/api/auth/create-profile", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId: user.id,
+        username,
+      }),
     });
 
-    if (profileError) {
-      setError(profileError.message);
+    if (!profileResponse.ok) {
+      const profileResult = (await profileResponse.json()) as {
+        error?: string;
+      };
+      setError(profileResult.error ?? "Failed to create profile.");
       setIsLoading(false);
       return;
     }
