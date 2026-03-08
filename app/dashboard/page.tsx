@@ -25,8 +25,6 @@ export default async function DashboardPage() {
       .maybeSingle(),
   ]);
 
-  const username =
-    profile?.username || user.user_metadata.username || user.email?.split("@")[0];
   const gamesPlayed = profileStats?.games_played ?? 0;
   const wins = profileStats?.wins ?? 0;
   const currentStreak = profileStats?.current_streak ?? 0;
@@ -44,11 +42,11 @@ export default async function DashboardPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.35em] text-primary">
           Home
         </p>
-        <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-          Welcome back, {username || "Player"}!
+        <h1 className="mt-3 text-4xl font-black tracking-tight text-white sm:text-5xl">
+          MusicMaster
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-white/60 sm:text-base">
-          Warm up your ears, queue the next challenge, and keep your streak alive.
+          What&apos;s your score today?
         </p>
       </section>
 

@@ -47,7 +47,7 @@ function HomeIcon({ active }: { active: boolean }) {
       aria-hidden="true"
       viewBox="0 0 24 24"
       className="h-5 w-5"
-      fill={active ? "currentColor" : "none"}
+      fill="none"
       stroke="currentColor"
       strokeWidth="1.8"
       strokeLinecap="round"
@@ -66,7 +66,7 @@ function MusicIcon({ active }: { active: boolean }) {
       aria-hidden="true"
       viewBox="0 0 24 24"
       className="h-5 w-5"
-      fill={active ? "currentColor" : "none"}
+      fill="none"
       stroke="currentColor"
       strokeWidth="1.8"
       strokeLinecap="round"
@@ -85,7 +85,7 @@ function UserIcon({ active }: { active: boolean }) {
       aria-hidden="true"
       viewBox="0 0 24 24"
       className="h-5 w-5"
-      fill={active ? "currentColor" : "none"}
+      fill="none"
       stroke="currentColor"
       strokeWidth="1.8"
       strokeLinecap="round"
