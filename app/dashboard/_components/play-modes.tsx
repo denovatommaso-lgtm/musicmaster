@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 const modes = [
@@ -38,22 +39,42 @@ export function PlayModes() {
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2">
-        {modes.map((mode) => (
-          <button
-            key={mode.title}
-            type="button"
-            onClick={() => handleClick(mode.title)}
-            className="rounded-[1.75rem] border border-white/10 bg-card p-5 text-left shadow-[0_18px_60px_rgba(0,0,0,0.3)] transition hover:border-primary/50 hover:bg-card2"
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-2xl">
-              {mode.icon}
-            </div>
-            <h2 className="mt-4 text-xl font-black text-white">{mode.title}</h2>
-            <p className="mt-2 text-sm leading-6 text-white/60">
-              {mode.description}
-            </p>
-          </button>
-        ))}
+        {modes.map((mode) => {
+          const content = (
+            <>
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-2xl">
+                {mode.icon}
+              </div>
+              <h2 className="mt-4 text-xl font-black text-white">{mode.title}</h2>
+              <p className="mt-2 text-sm leading-6 text-white/60">
+                {mode.description}
+              </p>
+            </>
+          );
+
+          if (mode.title === "Classic") {
+            return (
+              <Link
+                key={mode.title}
+                href="/dashboard/play/classic"
+                className="rounded-[1.75rem] border border-white/10 bg-card p-5 text-left shadow-[0_18px_60px_rgba(0,0,0,0.3)] transition hover:border-primary/50 hover:bg-card2"
+              >
+                {content}
+              </Link>
+            );
+          }
+
+          return (
+            <button
+              key={mode.title}
+              type="button"
+              onClick={() => handleClick(mode.title)}
+              className="rounded-[1.75rem] border border-white/10 bg-card p-5 text-left shadow-[0_18px_60px_rgba(0,0,0,0.3)] transition hover:border-primary/50 hover:bg-card2"
+            >
+              {content}
+            </button>
+          );
+        })}
       </div>
 
       {toast ? (
