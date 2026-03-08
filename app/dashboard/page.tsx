@@ -31,18 +31,30 @@ export default async function DashboardPage() {
   const winRate =
     gamesPlayed > 0 ? `${Math.round((wins / gamesPlayed) * 100)}%` : "0%";
   const stats = [
-    { label: "Games Played", value: gamesPlayed.toString(), icon: "🎮" },
-    { label: "Win Rate", value: winRate, icon: "🏆" },
-    { label: "Current Streak", value: currentStreak.toString(), icon: "🔥" },
+    {
+      label: "Games Played",
+      value: gamesPlayed.toString(),
+      icon: "🎮",
+      accent: "bg-primary",
+    },
+    {
+      label: "Win Rate",
+      value: winRate,
+      icon: "🏆",
+      accent: "bg-yellow",
+    },
+    {
+      label: "Current Streak",
+      value: currentStreak.toString(),
+      icon: "🔥",
+      accent: "bg-green",
+    },
   ];
 
   return (
     <main className="space-y-5">
       <section className="rounded-[2rem] border border-white/10 bg-card p-6 shadow-[0_20px_70px_rgba(0,0,0,0.32)] sm:p-7">
-        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-primary">
-          Home
-        </p>
-        <h1 className="mt-3 text-4xl font-black tracking-tight text-white sm:text-5xl">
+        <h1 className="text-4xl font-black tracking-tight text-primary sm:text-5xl">
           MusicMaster
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-white/60 sm:text-base">
@@ -50,20 +62,16 @@ export default async function DashboardPage() {
         </p>
       </section>
 
-      <section className="grid grid-cols-3 gap-3 sm:gap-4">
+      <section className="grid grid-cols-3 gap-2 text-center sm:gap-4">
         {stats.map((item) => (
-          <div
-            key={item.label}
-            className="rounded-[1.5rem] border border-white/10 bg-card p-4 shadow-[0_14px_36px_rgba(0,0,0,0.22)] sm:p-5"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-card2 text-lg">
-              {item.icon}
-            </div>
-            <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.22em] text-white/45 sm:text-xs">
-              {item.label}
-            </p>
-            <p className="mt-2 text-2xl font-black text-white sm:text-3xl">
+          <div key={item.label} className="flex flex-col items-center px-1 py-2">
+            <div className={`mb-4 h-1.5 w-10 rounded-full ${item.accent}`} />
+            <div className="text-2xl sm:text-3xl">{item.icon}</div>
+            <p className="mt-3 text-2xl font-black text-white sm:text-4xl">
               {item.value}
+            </p>
+            <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.22em] text-white/45 sm:text-xs">
+              {item.label}
             </p>
           </div>
         ))}
