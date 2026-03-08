@@ -11,6 +11,8 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -136,32 +138,54 @@ export default function SignupPage() {
               <span className="mb-2 block text-sm font-medium text-white/70">
                 Password
               </span>
-              <input
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-[#232632] px-4 py-3 text-white outline-none transition focus:border-[#FF4D8D] focus:ring-2 focus:ring-[#FF4D8D]/30"
-                placeholder="Create a password"
-                minLength={6}
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="w-full rounded-2xl border border-white/10 bg-[#232632] px-4 py-3 pr-14 text-white outline-none transition focus:border-[#FF4D8D] focus:ring-2 focus:ring-[#FF4D8D]/30"
+                  placeholder="Create a password"
+                  minLength={6}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="absolute inset-y-0 right-0 flex w-14 items-center justify-center text-white/45 transition hover:text-white"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                </button>
+              </div>
             </label>
 
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-white/70">
                 Confirm Password
               </span>
-              <input
-                type="password"
-                autoComplete="new-password"
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-[#232632] px-4 py-3 text-white outline-none transition focus:border-[#FF4D8D] focus:ring-2 focus:ring-[#FF4D8D]/30"
-                placeholder="Re-enter your password"
-                minLength={6}
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  className="w-full rounded-2xl border border-white/10 bg-[#232632] px-4 py-3 pr-14 text-white outline-none transition focus:border-[#FF4D8D] focus:ring-2 focus:ring-[#FF4D8D]/30"
+                  placeholder="Re-enter your password"
+                  minLength={6}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((current) => !current)}
+                  className="absolute inset-y-0 right-0 flex w-14 items-center justify-center text-white/45 transition hover:text-white"
+                  aria-label={
+                    showConfirmPassword ? "Hide confirm password" : "Show confirm password"
+                  }
+                >
+                  {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
+                </button>
+              </div>
             </label>
 
             {error ? (
@@ -191,5 +215,43 @@ export default function SignupPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 3l18 18" />
+      <path d="M10.6 10.7A3 3 0 0 0 13.3 13.4" />
+      <path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a18.7 18.7 0 0 1-4 4.9" />
+      <path d="M6.6 6.7A19.2 19.2 0 0 0 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.2-1.5" />
+    </svg>
   );
 }

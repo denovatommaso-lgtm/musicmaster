@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const items = [
-  { href: "/dashboard", icon: "🏠", label: "Home" },
-  { href: "/dashboard/play", icon: "🎵", label: "Play" },
-  { href: "/dashboard/profile", icon: "👤", label: "Profile" },
+  { href: "/dashboard", label: "Home", Icon: HomeIcon },
+  { href: "/dashboard/play", label: "Play", Icon: MusicIcon },
+  { href: "/dashboard/profile", label: "Profile", Icon: UserIcon },
 ];
 
 export function BottomNav() {
@@ -31,12 +31,68 @@ export function BottomNav() {
                   : "text-white/45 hover:text-white/70"
               }`}
             >
-              <span className="text-xl leading-none">{item.icon}</span>
+              <item.Icon active={isActive} />
               <span>{item.label}</span>
             </Link>
           );
         })}
       </div>
     </nav>
+  );
+}
+
+function HomeIcon({ active }: { active: boolean }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill={active ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 10.8 12 4l9 6.8" />
+      <path d="M5.5 9.8V20h13V9.8" />
+      <path d="M9.5 20v-5.5h5V20" />
+    </svg>
+  );
+}
+
+function MusicIcon({ active }: { active: boolean }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill={active ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M9 18V6.5l10-2v11.5" />
+      <circle cx="6.5" cy="18" r="2.5" />
+      <circle cx="16.5" cy="16" r="2.5" />
+    </svg>
+  );
+}
+
+function UserIcon({ active }: { active: boolean }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill={active ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M4.5 19.5a7.5 7.5 0 0 1 15 0" />
+    </svg>
   );
 }

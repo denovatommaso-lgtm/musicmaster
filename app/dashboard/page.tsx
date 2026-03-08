@@ -32,10 +32,15 @@ export default async function DashboardPage() {
   const currentStreak = profileStats?.current_streak ?? 0;
   const winRate =
     gamesPlayed > 0 ? `${Math.round((wins / gamesPlayed) * 100)}%` : "0%";
+  const stats = [
+    { label: "Games Played", value: gamesPlayed.toString(), icon: "🎮" },
+    { label: "Win Rate", value: winRate, icon: "🏆" },
+    { label: "Current Streak", value: currentStreak.toString(), icon: "🔥" },
+  ];
 
   return (
-    <main className="space-y-6">
-      <section className="rounded-[2rem] border border-white/10 bg-card p-6 shadow-[0_20px_70px_rgba(0,0,0,0.32)] sm:p-8">
+    <main className="space-y-5">
+      <section className="rounded-[2rem] border border-white/10 bg-card p-6 shadow-[0_20px_70px_rgba(0,0,0,0.32)] sm:p-7">
         <p className="text-xs font-semibold uppercase tracking-[0.35em] text-primary">
           Home
         </p>
@@ -47,57 +52,59 @@ export default async function DashboardPage() {
         </p>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-3">
-        {[
-          { label: "Games Played", value: gamesPlayed.toString() },
-          { label: "Win Rate", value: winRate },
-          { label: "Current Streak", value: currentStreak.toString() },
-        ].map((item) => (
+      <section className="grid grid-cols-3 gap-3 sm:gap-4">
+        {stats.map((item) => (
           <div
             key={item.label}
-            className="rounded-[1.5rem] border border-white/10 bg-card p-5"
+            className="rounded-[1.5rem] border border-white/10 bg-card p-4 shadow-[0_14px_36px_rgba(0,0,0,0.22)] sm:p-5"
           >
-            <p className="text-sm text-white/55">{item.label}</p>
-            <p className="mt-3 text-3xl font-black text-white">{item.value}</p>
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-card2 text-lg">
+              {item.icon}
+            </div>
+            <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.22em] text-white/45 sm:text-xs">
+              {item.label}
+            </p>
+            <p className="mt-2 text-2xl font-black text-white sm:text-3xl">
+              {item.value}
+            </p>
           </div>
         ))}
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="rounded-[1.75rem] border border-primary/20 bg-[linear-gradient(135deg,rgba(255,77,141,0.18),rgba(28,31,39,0.95),rgba(28,31,39,1))] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.3)]">
+      <section className="rounded-[1.85rem] border border-primary/20 bg-[linear-gradient(145deg,rgba(255,77,141,0.24),rgba(28,31,39,0.96),rgba(28,31,39,1))] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.34)]">
+        <div className="absolute" />
+        <div>
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-primary/80">
             Jump In
           </p>
-          <h2 className="mt-3 text-2xl font-black text-white">Ready for a quick round?</h2>
+          <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">
+            Ready for a quick round?
+          </h2>
           <p className="mt-2 max-w-lg text-sm leading-6 text-white/65">
             Start immediately with a fresh mix of tracks and race the clock.
           </p>
-          <Link
-            href="/dashboard/play"
-            className="mt-6 inline-flex min-h-14 w-full items-center justify-center rounded-2xl bg-primary px-6 text-base font-bold text-white transition hover:bg-primary/90 sm:w-auto"
-          >
-            Quick Play
-          </Link>
         </div>
+        <Link
+          href="/dashboard/play"
+          className="mt-6 flex min-h-15 w-full items-center justify-center rounded-[1.35rem] bg-[linear-gradient(135deg,#FF4D8D,#ff6ba1)] px-6 text-base font-black text-white shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_20px_45px_rgba(255,77,141,0.35)] transition hover:scale-[1.01] hover:brightness-110"
+        >
+          Quick Play
+        </Link>
 
-        <div className="grid gap-4">
+        <div className="mt-4 grid grid-cols-2 gap-3">
           <button
             type="button"
-            className="rounded-[1.5rem] border border-white/10 bg-card px-5 py-5 text-left transition hover:bg-card2"
+            className="rounded-[1.35rem] border border-white/10 bg-card px-4 py-4 text-left transition hover:border-primary/30 hover:bg-card2"
           >
-            <p className="text-lg font-black text-white">Create Room</p>
-            <p className="mt-2 text-sm text-white/60">
-              Host a private lobby and invite friends.
-            </p>
+            <p className="text-base font-black text-white">Create Room</p>
+            <p className="mt-1 text-sm text-white/55">Host friends instantly.</p>
           </button>
           <button
             type="button"
-            className="rounded-[1.5rem] border border-white/10 bg-card px-5 py-5 text-left transition hover:bg-card2"
+            className="rounded-[1.35rem] border border-white/10 bg-card px-4 py-4 text-left transition hover:border-primary/30 hover:bg-card2"
           >
-            <p className="text-lg font-black text-white">Join Room</p>
-            <p className="mt-2 text-sm text-white/60">
-              Enter a code and jump straight into the session.
-            </p>
+            <p className="text-base font-black text-white">Join Room</p>
+            <p className="mt-1 text-sm text-white/55">Enter a room code.</p>
           </button>
         </div>
       </section>
