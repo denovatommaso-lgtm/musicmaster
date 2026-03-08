@@ -53,7 +53,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="space-y-5">
-      <section className="rounded-[2rem] border border-white/10 bg-card p-6 shadow-[0_20px_70px_rgba(0,0,0,0.32)] sm:p-7">
+      <section>
         <h1 className="text-4xl font-black tracking-tight text-primary sm:text-5xl">
           MusicMaster
         </h1>
