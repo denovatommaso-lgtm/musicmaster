@@ -12,6 +12,9 @@ type Song = {
   correct_year: number;
   option_years: number[];
   album_art: string | null;
+  spotify_url: string | null;
+  spotify_uri: string | null;
+  playback_mode: "preview" | "spotify_link";
 };
 
 type Props = {
@@ -76,11 +79,16 @@ export function ClassicGameClient({ rounds, era }: Props) {
             era,
             count: result.songs.length,
             firstSong: result.songs[0]?.title ?? null,
+            previewSongs:
+              result.songs.filter((song) => song.playback_mode === "preview").length,
+            spotifyLinkSongs:
+              result.songs.filter((song) => song.playback_mode === "spotify_link")
+                .length,
           });
           setSongs(result.songs);
 
           if (result.songs.length === 0) {
-            setError("No playable songs were returned for this game.");
+            setError("No usable songs were returned for this game.");
           }
         }
       } catch (loadError) {
@@ -118,6 +126,8 @@ export function ClassicGameClient({ rounds, era }: Props) {
 
   const song = songs[currentIndex];
   const hasPreview = Boolean(song?.preview_url?.trim());
+  const hasSpotifyLink = Boolean(song?.spotify_url?.trim());
+  const isPreviewMode = song?.playback_mode === "preview";
   const isComplete = useMemo(
     () => songs.length > 0 && currentIndex >= songs.length,
     [currentIndex, songs.length],
@@ -131,6 +141,9 @@ export function ClassicGameClient({ rounds, era }: Props) {
     console.log("Classic mode current song", {
       title: song.title,
       previewUrl: song.preview_url,
+      spotifyUrl: song.spotify_url,
+      spotifyUri: song.spotify_uri,
+      playbackMode: song.playback_mode,
       round: currentIndex + 1,
     });
   }, [currentIndex, song]);
@@ -163,7 +176,7 @@ export function ClassicGameClient({ rounds, era }: Props) {
   async function handlePlay() {
     const previewUrl = song?.preview_url ?? null;
 
-    if (!song || isAnswered) {
+    if (!song || isAnswered || song.playback_mode !== "preview") {
       return;
     }
 
@@ -263,6 +276,31 @@ export function ClassicGameClient({ rounds, era }: Props) {
       setPlaybackError("Preview could not be played on this device.");
       destroyAudio();
     }
+  }
+
+  function handleOpenSpotify() {
+    if (!song || isAnswered || song.playback_mode !== "spotify_link") {
+      return;
+    }
+
+    console.log("Classic mode spotify link open", {
+      title: song.title,
+      spotifyUrl: song.spotify_url,
+      spotifyUri: song.spotify_uri,
+    });
+
+    if (!song.spotify_url?.trim()) {
+      console.error("Classic mode spotify link missing", {
+        title: song.title,
+        spotifyUrl: song.spotify_url,
+        spotifyUri: song.spotify_uri,
+      });
+      setPlaybackError("Spotify link unavailable for this track.");
+      return;
+    }
+
+    setPlaybackError("");
+    window.open(song.spotify_url, "_blank", "noopener,noreferrer");
   }
 
   function handleSubmit() {
@@ -401,53 +439,77 @@ export function ClassicGameClient({ rounds, era }: Props) {
         </div>
 
         <div className="mt-5 rounded-[1.25rem] border border-white/10 bg-card2 px-4 py-3">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handlePlay}
-              disabled={!hasPreview || isAnswered}
-              aria-label={isPlaying ? "Pause preview" : "Play preview"}
-              aria-pressed={isPlaying}
-              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-[0_10px_25px_rgba(255,77,141,0.25)] transition ${
-                !hasPreview || isAnswered
-                  ? "cursor-not-allowed bg-white/10 text-white/35 shadow-none"
-                  : "bg-[linear-gradient(135deg,#FF4D8D,#ff6ba1)] hover:scale-[1.02]"
-              }`}
-            >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                className="h-5 w-5"
-                fill="currentColor"
-              >
-                {isPlaying ? (
-                  <path d="M7 6h3v12H7zm7 0h3v12h-3z" />
-                ) : (
-                  <path d="M8 6v12l10-6-10-6Z" />
-                )}
-              </svg>
-            </button>
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary/80">
+            {isPreviewMode ? "Preview available" : "Listen on Spotify"}
+          </p>
 
-            <div className="min-w-0 flex-1">
-              <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-                <div
-                  className="h-full rounded-full bg-[linear-gradient(90deg,#FF4D8D,#FFD36A)] transition-all"
-                  style={{ width: `${progress}%` }}
-                />
+          {isPreviewMode ? (
+            <div className="mt-3 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handlePlay}
+                disabled={!hasPreview || isAnswered}
+                aria-label={isPlaying ? "Pause preview" : "Play preview"}
+                aria-pressed={isPlaying}
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-[0_10px_25px_rgba(255,77,141,0.25)] transition ${
+                  !hasPreview || isAnswered
+                    ? "cursor-not-allowed bg-white/10 text-white/35 shadow-none"
+                    : "bg-[linear-gradient(135deg,#FF4D8D,#ff6ba1)] hover:scale-[1.02]"
+                }`}
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="currentColor"
+                >
+                  {isPlaying ? (
+                    <path d="M7 6h3v12H7zm7 0h3v12h-3z" />
+                  ) : (
+                    <path d="M8 6v12l10-6-10-6Z" />
+                  )}
+                </svg>
+              </button>
+
+              <div className="min-w-0 flex-1">
+                <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-[linear-gradient(90deg,#FF4D8D,#FFD36A)] transition-all"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-xs text-white/60">
+                  {!hasPreview
+                    ? "Preview unavailable"
+                    : isPlaying
+                      ? "Playing preview..."
+                      : "Tap to play"}
+                </p>
               </div>
+            </div>
+          ) : (
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={handleOpenSpotify}
+                disabled={!hasSpotifyLink || isAnswered}
+                className={`flex min-h-12 w-full items-center justify-center rounded-[1rem] px-4 text-sm font-black text-white transition ${
+                  !hasSpotifyLink || isAnswered
+                    ? "cursor-not-allowed bg-white/10 text-white/35"
+                    : "bg-[linear-gradient(135deg,#FF4D8D,#ff6ba1)] shadow-[0_18px_45px_rgba(255,77,141,0.28)]"
+                }`}
+              >
+                Open in Spotify
+              </button>
               <p className="mt-2 text-xs text-white/60">
-                {!hasPreview
-                  ? "Preview unavailable"
-                  : isPlaying
-                    ? "Playing preview..."
-                    : "Tap to play"}
+                Tap to open the full track in Spotify for this round.
               </p>
             </div>
-          </div>
+          )}
 
-          {playbackError || !hasPreview ? (
+          {playbackError ? (
             <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs font-medium text-[#ffd0e1]">
-              {playbackError || "Preview unavailable for this track."}
+              {playbackError}
             </div>
           ) : null}
         </div>
