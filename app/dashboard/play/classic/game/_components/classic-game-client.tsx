@@ -320,32 +320,35 @@ export function ClassicGameClient({ rounds, era }: Props) {
           </div>
         </div>
 
-        <div className="mt-6 rounded-[1.75rem] border border-white/10 bg-card2 p-5">
-          <button
-            type="button"
-            onClick={handlePlay}
-            className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-[linear-gradient(135deg,#FF4D8D,#ff6ba1)] text-white shadow-[0_18px_45px_rgba(255,77,141,0.3)] transition hover:scale-[1.02]"
-          >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              className="h-9 w-9"
-              fill="currentColor"
+        <div className="mt-5 rounded-[1.25rem] border border-white/10 bg-card2 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handlePlay}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#FF4D8D,#ff6ba1)] text-white shadow-[0_10px_25px_rgba(255,77,141,0.25)] transition hover:scale-[1.02]"
             >
-              <path d="M8 6v12l10-6-10-6Z" />
-            </svg>
-          </button>
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="currentColor"
+              >
+                <path d="M8 6v12l10-6-10-6Z" />
+              </svg>
+            </button>
 
-          <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
-            <div
-              className="h-full rounded-full bg-[linear-gradient(90deg,#FF4D8D,#FFD36A)] transition-all"
-              style={{ width: `${progress}%` }}
-            />
+            <div className="min-w-0 flex-1">
+              <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-[linear-gradient(90deg,#FF4D8D,#FFD36A)] transition-all"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <p className="mt-2 text-xs text-white/60">
+                {isPlaying ? "Playing..." : "Tap to play"}
+              </p>
+            </div>
           </div>
-
-          <p className="mt-3 text-center text-sm text-white/60">
-            {isPlaying ? "Playing..." : "Tap to play"}
-          </p>
         </div>
       </section>
 
@@ -356,24 +359,17 @@ export function ClassicGameClient({ rounds, era }: Props) {
 
         <div className="mt-5 grid grid-cols-2 gap-3">
           {song.option_years.map((option) => (
-            <div key={option} className="relative">
-              <button
-                type="button"
-                onClick={() => setSelectedYear(option)}
-                disabled={isAnswered}
-                className={`min-h-20 w-full rounded-[1.25rem] border px-4 py-4 text-center text-lg font-black transition ${getOptionState(
-                  option,
-                )}`}
-              >
-                {option}
-              </button>
-
-              {isAnswered && option === song.correct_year && lastPoints !== null ? (
-                <div className="pointer-events-none absolute right-2 top-2 rounded-full bg-[#0E0F11]/90 px-2 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-green">
-                  +{lastPoints} pts
-                </div>
-              ) : null}
-            </div>
+            <button
+              key={option}
+              type="button"
+              onClick={() => setSelectedYear(option)}
+              disabled={isAnswered}
+              className={`min-h-18 w-full rounded-[1.25rem] border px-4 py-4 text-center text-lg font-black transition ${getOptionState(
+                option,
+              )}`}
+            >
+              {option}
+            </button>
           ))}
         </div>
 
@@ -388,14 +384,14 @@ export function ClassicGameClient({ rounds, era }: Props) {
           </button>
         ) : (
           <>
-            <p className="mt-4 text-center text-sm text-white/60">
-              {lastPoints === 5
-                ? "Exact match."
-                : lastPoints === 3
-                  ? "Within 2 years."
-                  : lastPoints === 1
-                    ? "Within 5 years."
-                    : "No points this round."}
+            <p
+              className={`mt-4 text-center text-sm ${
+                selectedYear === song.correct_year ? "text-green" : "text-white/60"
+              }`}
+            >
+              {selectedYear === song.correct_year
+                ? `✓ Correct! +${lastPoints ?? 0} points`
+                : `✗ Wrong — correct was ${song.correct_year}, +${lastPoints ?? 0} points`}
             </p>
 
             <button
