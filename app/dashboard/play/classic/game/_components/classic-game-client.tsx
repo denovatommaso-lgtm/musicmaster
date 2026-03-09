@@ -203,6 +203,24 @@ export function ClassicGameClient({ rounds, era }: Props) {
     setCurrentIndex((current) => current + 1);
   }
 
+  function getOptionState(option: number) {
+    if (!isAnswered || !song) {
+      return selectedYear === option
+        ? "border-primary bg-primary text-white"
+        : "border-white/10 bg-card2 text-white/80 hover:border-primary/30";
+    }
+
+    if (option === song.correct_year) {
+      return "border-transparent bg-green text-[#0E0F11]";
+    }
+
+    if (selectedYear === option && option !== song.correct_year) {
+      return "border-transparent bg-[#FF4444] text-[#0E0F11]";
+    }
+
+    return "border-white/5 bg-card2 text-white/35";
+  }
+
   if (isLoading) {
     return (
       <main className="space-y-6">
@@ -338,19 +356,24 @@ export function ClassicGameClient({ rounds, era }: Props) {
 
         <div className="mt-5 grid grid-cols-2 gap-3">
           {song.option_years.map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => setSelectedYear(option)}
-              disabled={isAnswered}
-              className={`rounded-[1.25rem] border px-4 py-4 text-center text-lg font-black transition ${
-                selectedYear === option
-                  ? "border-primary bg-primary text-white"
-                  : "border-white/10 bg-card2 text-white/80 hover:border-primary/30"
-              } ${isAnswered ? "opacity-80" : ""}`}
-            >
-              {option}
-            </button>
+            <div key={option} className="relative">
+              <button
+                type="button"
+                onClick={() => setSelectedYear(option)}
+                disabled={isAnswered}
+                className={`min-h-20 w-full rounded-[1.25rem] border px-4 py-4 text-center text-lg font-black transition ${getOptionState(
+                  option,
+                )}`}
+              >
+                {option}
+              </button>
+
+              {isAnswered && option === song.correct_year && lastPoints !== null ? (
+                <div className="pointer-events-none absolute right-2 top-2 rounded-full bg-[#0E0F11]/90 px-2 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-green">
+                  +{lastPoints} pts
+                </div>
+              ) : null}
+            </div>
           ))}
         </div>
 
@@ -364,32 +387,25 @@ export function ClassicGameClient({ rounds, era }: Props) {
             Submit Guess
           </button>
         ) : (
-          <div className="mt-5 rounded-[1.5rem] border border-white/10 bg-card2 p-5">
-            <p className="text-sm uppercase tracking-[0.25em] text-white/45">
-              Answer Revealed
-            </p>
-            <p className="mt-3 text-2xl font-black text-white">
-              {song.correct_year}
-            </p>
-            <p className="mt-2 text-sm text-white/60">
-              {lastPoints} pts earned
+          <>
+            <p className="mt-4 text-center text-sm text-white/60">
               {lastPoints === 5
-                ? " for an exact match."
+                ? "Exact match."
                 : lastPoints === 3
-                  ? " for landing within 2 years."
+                  ? "Within 2 years."
                   : lastPoints === 1
-                    ? " for landing within 5 years."
-                    : " this round."}
+                    ? "Within 5 years."
+                    : "No points this round."}
             </p>
 
             <button
               type="button"
               onClick={handleNextRound}
-              className="mt-5 flex min-h-14 w-full items-center justify-center rounded-[1.25rem] bg-primary px-6 text-base font-black text-white"
+              className="mt-4 flex min-h-14 w-full items-center justify-center rounded-[1.25rem] bg-primary px-6 text-base font-black text-white"
             >
               {currentIndex + 1 === songs.length ? "See Results" : "Next Round"}
             </button>
-          </div>
+          </>
         )}
       </section>
     </main>
