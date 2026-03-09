@@ -1,32 +1,32 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { BackButton } from "@/src/components/ui/BackButton";
 
 const roundOptions = [5, 10, 20];
-const eraOptions = ["60s", "70s", "80s", "90s", "2000s", "2010s", "2020s", "mix"];
+const eraOptions = ["mix", "60s", "70s", "80s", "90s", "2000s", "2010s", "2020s"];
 
 export default function ClassicModeSetupPage() {
   const router = useRouter();
   const [era, setEra] = useState("mix");
   const [rounds, setRounds] = useState(10);
+  const selectedEraRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    selectedEraRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }, []);
 
   return (
     <main className="space-y-6">
-      <Link
-        href="/dashboard/play"
-        className="inline-flex items-center gap-2 text-sm font-semibold text-white/60 transition hover:text-white"
-      >
-        <span aria-hidden="true">←</span>
-        Back
-      </Link>
+      <BackButton />
 
-      <section className="rounded-[2rem] border border-white/10 bg-card p-6 shadow-[0_20px_70px_rgba(0,0,0,0.32)] sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-primary">
-          Classic Mode
-        </p>
-        <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+      <section>
+        <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
           Classic Mode
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-white/60 sm:text-base">
@@ -34,23 +34,25 @@ export default function ClassicModeSetupPage() {
         </p>
       </section>
 
-      <section className="rounded-[1.85rem] border border-white/10 bg-card p-6">
+      <section>
         <p className="text-xs font-semibold uppercase tracking-[0.35em] text-white/45">
           Select Era
         </p>
-        <div className="mt-5 flex flex-wrap gap-2">
+        <div className="scrollbar-hide mt-5 flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 scroll-smooth">
           {eraOptions.map((option) => {
             const label = option === "mix" ? "Mix" : option;
+            const isSelected = era === option;
 
             return (
               <button
                 key={option}
                 type="button"
                 onClick={() => setEra(option)}
-                className={`rounded-full border px-4 py-2 text-sm font-bold transition ${
-                  era === option
-                    ? "border-primary bg-primary text-white shadow-[0_18px_45px_rgba(255,77,141,0.28)]"
-                    : "border-white/10 bg-card2 text-white/75 hover:border-primary/30"
+                ref={isSelected ? selectedEraRef : null}
+                className={`min-h-12 min-w-24 snap-center rounded-full px-4 py-3 text-center text-sm font-bold transition ${
+                  isSelected
+                    ? "bg-primary text-white shadow-[0_10px_30px_rgba(255,77,141,0.35)]"
+                    : "bg-card text-white/55 hover:bg-card2 hover:text-white/80"
                 }`}
               >
                 {label}
@@ -59,7 +61,7 @@ export default function ClassicModeSetupPage() {
           })}
         </div>
 
-        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-white/45">
+        <p className="mt-6 text-xs font-semibold uppercase tracking-[0.35em] text-white/45">
           Select Rounds
         </p>
         <div className="mt-5 grid grid-cols-3 gap-3">

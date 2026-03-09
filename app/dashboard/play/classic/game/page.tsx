@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackButton } from "@/src/components/ui/BackButton";
 import { ClassicGameClient } from "./_components/classic-game-client";
 
 type PageProps = {
@@ -17,13 +17,7 @@ export default async function ClassicGamePage({ searchParams }: PageProps) {
 
   return (
     <>
-      <Link
-        href="/dashboard/play/classic"
-        className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-white/60 transition hover:text-white"
-      >
-        <span aria-hidden="true">←</span>
-        Back
-      </Link>
+      <BackButton className="mb-4" />
       <ClassicGameClient rounds={rounds} era={era} />
     </>
   );

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { BackButton } from "@/src/components/ui/BackButton";
 
 type Song = {
   id: string;
@@ -195,13 +196,7 @@ export function ClassicGameClient({ rounds, era }: Props) {
   if (error && !songs.length) {
     return (
       <main className="space-y-6">
-        <Link
-          href="/dashboard/play/classic"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-white/60 transition hover:text-white"
-        >
-          <span aria-hidden="true">←</span>
-          Back
-        </Link>
+        <BackButton />
         <div className="rounded-[2rem] border border-primary/20 bg-card p-6 text-[#ffd0e1]">
           {error}
         </div>
