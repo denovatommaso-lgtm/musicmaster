@@ -35,6 +35,7 @@ function scoreGuess(guess: number, correctYear: number) {
 
 export function ClassicGameClient({ rounds, era }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const spotifyAutoOpenedRoundsRef = useRef<Set<string>>(new Set());
   const audioListenersRef = useRef<{
     timeupdate?: () => void;
     ended?: () => void;
@@ -59,6 +60,7 @@ export function ClassicGameClient({ rounds, era }: Props) {
       setIsLoading(true);
       setError("");
       setSongs([]);
+      spotifyAutoOpenedRoundsRef.current = new Set();
       setCurrentIndex(0);
       setScore(0);
       setSelectedYear(null);
@@ -125,6 +127,7 @@ export function ClassicGameClient({ rounds, era }: Props) {
   }, [currentIndex, songs]);
 
   const song = songs[currentIndex];
+  const roundKey = song ? `${currentIndex}:${song.id}` : null;
   const hasPreview = Boolean(song?.preview_url?.trim());
   const hasSpotifyLink = Boolean(song?.spotify_url?.trim());
   const isPreviewMode = song?.playback_mode === "preview";
@@ -144,9 +147,12 @@ export function ClassicGameClient({ rounds, era }: Props) {
       spotifyUrl: song.spotify_url,
       spotifyUri: song.spotify_uri,
       playbackMode: song.playback_mode,
+      autoOpenAttempted: roundKey
+        ? spotifyAutoOpenedRoundsRef.current.has(roundKey)
+        : false,
       round: currentIndex + 1,
     });
-  }, [currentIndex, song]);
+  }, [currentIndex, roundKey, song]);
 
   function destroyAudio() {
     const audio = audioRef.current;
@@ -278,30 +284,105 @@ export function ClassicGameClient({ rounds, era }: Props) {
     }
   }
 
-  function handleOpenSpotify() {
+  function openSpotifyLink(source: "auto" | "manual") {
     if (!song || isAnswered || song.playback_mode !== "spotify_link") {
-      return;
+      return false;
     }
 
     console.log("Classic mode spotify link open", {
       title: song.title,
+      roundIndex: currentIndex,
       spotifyUrl: song.spotify_url,
       spotifyUri: song.spotify_uri,
+      source,
     });
 
-    if (!song.spotify_url?.trim()) {
+    const spotifyUri = song.spotify_uri?.trim() ?? "";
+    const spotifyUrl = song.spotify_url?.trim() ?? "";
+
+    if (!spotifyUri && !spotifyUrl) {
       console.error("Classic mode spotify link missing", {
         title: song.title,
-        spotifyUrl: song.spotify_url,
-        spotifyUri: song.spotify_uri,
+        roundIndex: currentIndex,
+        spotifyUrl,
+        spotifyUri,
+        source,
       });
       setPlaybackError("Spotify link unavailable for this track.");
-      return;
+      return false;
     }
 
     setPlaybackError("");
-    window.open(song.spotify_url, "_blank", "noopener,noreferrer");
+
+    try {
+      let openedWindow: Window | null = null;
+
+      if (spotifyUri) {
+        openedWindow = window.open(spotifyUri, "_blank", "noopener,noreferrer");
+      }
+
+      if (!openedWindow && spotifyUrl) {
+        openedWindow = window.open(spotifyUrl, "_blank", "noopener,noreferrer");
+      }
+
+      console.log("Classic mode spotify link open result", {
+        title: song.title,
+        roundIndex: currentIndex,
+        spotifyUrl,
+        spotifyUri,
+        source,
+        openedWindow: Boolean(openedWindow),
+      });
+
+      if (!openedWindow) {
+        setPlaybackError("Spotify may have been blocked. Use the button below to try again.");
+        return false;
+      }
+
+      return true;
+    } catch (spotifyOpenError) {
+      console.error("Classic mode spotify link open failed", {
+        title: song.title,
+        roundIndex: currentIndex,
+        spotifyUrl,
+        spotifyUri,
+        source,
+        error: spotifyOpenError,
+      });
+      setPlaybackError("Spotify could not be opened automatically. Try again below.");
+      return false;
+    }
   }
+
+  function handleOpenSpotify() {
+    console.log("Classic mode spotify fallback button used", {
+      roundIndex: currentIndex,
+      playbackMode: song?.playback_mode ?? null,
+      spotifyUrl: song?.spotify_url ?? null,
+      spotifyUri: song?.spotify_uri ?? null,
+    });
+    openSpotifyLink("manual");
+  }
+
+  useEffect(() => {
+    if (!song || song.playback_mode !== "spotify_link" || !roundKey) {
+      return;
+    }
+
+    if (spotifyAutoOpenedRoundsRef.current.has(roundKey)) {
+      return;
+    }
+
+    spotifyAutoOpenedRoundsRef.current.add(roundKey);
+    console.log("Classic mode spotify auto-open attempt", {
+      roundIndex: currentIndex,
+      playbackMode: song.playback_mode,
+      spotifyUrl: song.spotify_url,
+      spotifyUri: song.spotify_uri,
+      autoOpenAttempted: true,
+    });
+    openSpotifyLink("auto");
+  }, [currentIndex, roundKey, song]);
 
   function handleSubmit() {
     if (selectedYear === null || !song) {
@@ -489,21 +570,24 @@ export function ClassicGameClient({ rounds, era }: Props) {
             </div>
           ) : (
             <div className="mt-3">
+              <div className="rounded-[1rem] border border-white/10 bg-background/30 px-3 py-3">
+                <p className="text-sm font-semibold text-white">Opening Spotify...</p>
+                <p className="mt-1 text-xs text-white/60">
+                  Return to the game after listening and submit your guess.
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={handleOpenSpotify}
                 disabled={!hasSpotifyLink || isAnswered}
-                className={`flex min-h-12 w-full items-center justify-center rounded-[1rem] px-4 text-sm font-black text-white transition ${
+                className={`mt-3 flex min-h-12 w-full items-center justify-center rounded-[1rem] px-4 text-sm font-black text-white transition ${
                   !hasSpotifyLink || isAnswered
                     ? "cursor-not-allowed bg-white/10 text-white/35"
                     : "bg-[linear-gradient(135deg,#FF4D8D,#ff6ba1)] shadow-[0_18px_45px_rgba(255,77,141,0.28)]"
                 }`}
               >
-                Open in Spotify
+                Open in Spotify again
               </button>
-              <p className="mt-2 text-xs text-white/60">
-                Tap to open the full track in Spotify for this round.
-              </p>
             </div>
           )}
 
