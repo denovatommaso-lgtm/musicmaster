@@ -50,6 +50,12 @@ export function ClassicGameClient({ rounds, era }: Props) {
     async function loadSongs() {
       setIsLoading(true);
       setError("");
+      setSongs([]);
+      setCurrentIndex(0);
+      setScore(0);
+      setSelectedYear(null);
+      setIsAnswered(false);
+      setLastPoints(null);
 
       try {
         const response = await fetch(`/api/game/classic?rounds=${rounds}&era=${era}`);
@@ -60,7 +66,17 @@ export function ClassicGameClient({ rounds, era }: Props) {
         }
 
         if (isMounted) {
+          console.log("Classic mode API result", {
+            rounds,
+            era,
+            count: result.songs.length,
+            firstSong: result.songs[0]?.title ?? null,
+          });
           setSongs(result.songs);
+
+          if (result.songs.length === 0) {
+            setError("No playable songs were returned for this game.");
+          }
         }
       } catch (loadError) {
         if (isMounted) {
@@ -94,6 +110,10 @@ export function ClassicGameClient({ rounds, era }: Props) {
     const previewUrl = songs[currentIndex]?.preview_url;
 
     if (!previewUrl) {
+      console.log("Classic mode skipping track without preview", {
+        index: currentIndex,
+        title: songs[currentIndex]?.title ?? null,
+      });
       setCurrentIndex((current) => current + 1);
       return;
     }

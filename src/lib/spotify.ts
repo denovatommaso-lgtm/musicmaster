@@ -145,13 +145,13 @@ export async function getTracksByEra(era: EraKey, limit = 10) {
     const eras = Object.keys(ERA_QUERY_MAP) as Array<Exclude<EraKey, "mix">>;
     const perEra = Math.max(2, Math.ceil(limit / eras.length));
     const tracks = await Promise.all(
-      eras.map((eraKey) => spotifySearch(`${ERA_QUERY_MAP[eraKey]} tag:new`, perEra)),
+      eras.map((eraKey) => spotifySearch(ERA_QUERY_MAP[eraKey], perEra)),
     );
 
     return shuffle(tracks.flat()).slice(0, limit);
   }
 
-  return spotifySearch(`${ERA_QUERY_MAP[era]} tag:new`, Math.max(limit * 3, limit));
+  return spotifySearch(ERA_QUERY_MAP[era], Math.max(limit * 3, limit));
 }
 
 function shuffle<T>(items: T[]) {

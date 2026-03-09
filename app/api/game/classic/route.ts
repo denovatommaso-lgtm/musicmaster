@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { getTracksByEra } from "@/src/lib/spotify";
 
+const MOCK_PREVIEW_URL =
+  "data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YTAAAAAA////AAAA////AAAA////AAAA////AAAA";
+
 type MockSong = {
   id: string;
   title: string;
@@ -78,6 +81,7 @@ export async function GET(request: Request) {
     : "mix";
 
   try {
+    console.log("[classic api] request", { rounds, era });
     const spotifyTracks = await getTracksByEra(
       era as "60s" | "70s" | "80s" | "90s" | "2000s" | "2010s" | "2020s" | "mix",
       rounds,
@@ -85,6 +89,10 @@ export async function GET(request: Request) {
     const playableTracks = spotifyTracks.filter(
       (track): track is NonNullable<(typeof spotifyTracks)[number]> => Boolean(track),
     );
+    console.log("[classic api] spotify tracks", {
+      fetched: spotifyTracks.length,
+      playable: playableTracks.length,
+    });
 
     if (playableTracks.length >= 3) {
       const songs = playableTracks.slice(0, rounds).map((song) => ({
@@ -92,18 +100,31 @@ export async function GET(request: Request) {
         option_years: buildOptionYears(song.correct_year),
       }));
 
+      console.log("[classic api] returning spotify songs", {
+        count: songs.length,
+        firstSong: songs[0]?.title ?? null,
+      });
+
       return NextResponse.json({ songs });
     }
-  } catch {
+  } catch (error) {
+    console.log("[classic api] spotify failed, using mock fallback", {
+      message: error instanceof Error ? error.message : "unknown error",
+    });
     // Fall through to mock data when Spotify is unavailable.
   }
 
   const songs = shuffle(SONGS).slice(0, rounds).map((song) => ({
     ...song,
-    preview_url: null,
+    preview_url: MOCK_PREVIEW_URL,
     album_art: null,
     option_years: buildOptionYears(song.correct_year),
   }));
+
+  console.log("[classic api] returning mock songs", {
+    count: songs.length,
+    firstSong: songs[0]?.title ?? null,
+  });
 
   return NextResponse.json({ songs });
 }
