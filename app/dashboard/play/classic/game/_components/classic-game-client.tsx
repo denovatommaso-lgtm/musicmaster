@@ -10,15 +10,15 @@ type Song = {
   preview_url: string | null;
   correct_year: number;
   option_years: number[];
+  album_art: string | null;
 };
 
 type Props = {
   rounds: number;
+  era: string;
 };
 
 const PREVIEW_DURATION = 30;
-const FALLBACK_PREVIEW =
-  "data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YTAAAAAA////AAAA////AAAA////AAAA////AAAA";
 
 function scoreGuess(guess: number, correctYear: number) {
   const diff = Math.abs(guess - correctYear);
@@ -29,8 +29,9 @@ function scoreGuess(guess: number, correctYear: number) {
   return 0;
 }
 
-export function ClassicGameClient({ rounds }: Props) {
+export function ClassicGameClient({ rounds, era }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const stopTimeoutRef = useRef<number | null>(null);
   const [songs, setSongs] = useState<Song[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -50,7 +51,7 @@ export function ClassicGameClient({ rounds }: Props) {
       setError("");
 
       try {
-        const response = await fetch(`/api/game/classic?rounds=${rounds}`);
+        const response = await fetch(`/api/game/classic?rounds=${rounds}&era=${era}`);
         const result = (await response.json()) as { songs?: Song[]; error?: string };
 
         if (!response.ok || !result.songs) {
@@ -78,14 +79,25 @@ export function ClassicGameClient({ rounds }: Props) {
     return () => {
       isMounted = false;
     };
-  }, [rounds]);
+  }, [era, rounds]);
 
   useEffect(() => {
     if (!songs.length) {
       return;
     }
 
-    const audio = new Audio(songs[currentIndex]?.preview_url ?? FALLBACK_PREVIEW);
+    if (currentIndex >= songs.length) {
+      return;
+    }
+
+    const previewUrl = songs[currentIndex]?.preview_url;
+
+    if (!previewUrl) {
+      setCurrentIndex((current) => current + 1);
+      return;
+    }
+
+    const audio = new Audio(previewUrl);
     audioRef.current = audio;
 
     const syncProgress = () => {
@@ -108,6 +120,9 @@ export function ClassicGameClient({ rounds }: Props) {
     setProgress(0);
 
     return () => {
+      if (stopTimeoutRef.current) {
+        window.clearTimeout(stopTimeoutRef.current);
+      }
       audio.pause();
       audio.currentTime = 0;
       audio.removeEventListener("timeupdate", syncProgress);
@@ -140,7 +155,7 @@ export function ClassicGameClient({ rounds }: Props) {
     try {
       await audio.play();
       setIsPlaying(true);
-      window.setTimeout(() => {
+      stopTimeoutRef.current = window.setTimeout(() => {
         audio.pause();
         audio.currentTime = 0;
         setIsPlaying(false);
@@ -210,7 +225,7 @@ export function ClassicGameClient({ rounds }: Props) {
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <Link
-              href={`/dashboard/play/classic/game?rounds=${rounds}`}
+              href={`/dashboard/play/classic/game?rounds=${rounds}&era=${era}`}
               className="flex min-h-14 items-center justify-center rounded-[1.25rem] bg-[linear-gradient(135deg,#FF4D8D,#ff6ba1)] px-6 text-base font-black text-white shadow-[0_18px_45px_rgba(255,77,141,0.28)]"
             >
               Play Again
@@ -249,8 +264,28 @@ export function ClassicGameClient({ rounds }: Props) {
         <p className="text-sm font-semibold uppercase tracking-[0.25em] text-white/45">
           Now Guessing
         </p>
-        <h2 className="mt-3 text-2xl font-black text-white">{song.title}</h2>
-        <p className="mt-1 text-sm text-white/55">{song.artist}</p>
+        <div className="mt-4 flex items-start gap-4">
+          <div className="h-24 w-24 overflow-hidden rounded-[1.25rem] border border-white/10 bg-card2">
+            {song.album_art ? (
+              <img
+                src={song.album_art}
+                alt={`${song.title} album art`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-3xl">
+                🎵
+              </div>
+            )}
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-2xl font-black text-white">{song.title}</h2>
+            <p className="mt-1 text-sm text-white/55">{song.artist}</p>
+            <p className="mt-3 text-xs uppercase tracking-[0.25em] text-primary/70">
+              Era {era === "mix" ? "Mix" : era}
+            </p>
+          </div>
+        </div>
 
         <div className="mt-6 rounded-[1.75rem] border border-white/10 bg-card2 p-5">
           <button

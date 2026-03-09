@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 const roundOptions = [5, 10, 20];
+const eraOptions = ["60s", "70s", "80s", "90s", "2000s", "2010s", "2020s", "mix"];
 
 export default function ClassicModeSetupPage() {
   const router = useRouter();
+  const [era, setEra] = useState("mix");
   const [rounds, setRounds] = useState(10);
 
   return (
@@ -34,6 +36,30 @@ export default function ClassicModeSetupPage() {
 
       <section className="rounded-[1.85rem] border border-white/10 bg-card p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.35em] text-white/45">
+          Select Era
+        </p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          {eraOptions.map((option) => {
+            const label = option === "mix" ? "Mix" : option;
+
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setEra(option)}
+                className={`rounded-full border px-4 py-2 text-sm font-bold transition ${
+                  era === option
+                    ? "border-primary bg-primary text-white shadow-[0_18px_45px_rgba(255,77,141,0.28)]"
+                    : "border-white/10 bg-card2 text-white/75 hover:border-primary/30"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
+        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-white/45">
           Select Rounds
         </p>
         <div className="mt-5 grid grid-cols-3 gap-3">
@@ -55,7 +81,9 @@ export default function ClassicModeSetupPage() {
 
         <button
           type="button"
-          onClick={() => router.push(`/dashboard/play/classic/game?rounds=${rounds}`)}
+          onClick={() =>
+            router.push(`/dashboard/play/classic/game?rounds=${rounds}&era=${era}`)
+          }
           className="mt-6 flex min-h-15 w-full items-center justify-center rounded-[1.35rem] bg-[linear-gradient(135deg,#FF4D8D,#ff6ba1)] px-6 text-base font-black text-white shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_20px_45px_rgba(255,77,141,0.35)] transition hover:scale-[1.01] hover:brightness-110"
         >
           Start Game

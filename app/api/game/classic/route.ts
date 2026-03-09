@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
+import { getTracksByEra } from "@/src/lib/spotify";
 
 type MockSong = {
   id: string;
   title: string;
   artist: string;
   correct_year: number;
+  album_art?: string | null;
 };
 
 const SONGS: MockSong[] = [
@@ -67,11 +69,39 @@ function buildOptionYears(correctYear: number) {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const requestedRounds = Number(searchParams.get("rounds") ?? 5);
+  const requestedEra = searchParams.get("era") ?? "mix";
   const rounds = [5, 10, 20].includes(requestedRounds) ? requestedRounds : 5;
+  const era = ["60s", "70s", "80s", "90s", "2000s", "2010s", "2020s", "mix"].includes(
+    requestedEra,
+  )
+    ? requestedEra
+    : "mix";
+
+  try {
+    const spotifyTracks = await getTracksByEra(
+      era as "60s" | "70s" | "80s" | "90s" | "2000s" | "2010s" | "2020s" | "mix",
+      rounds,
+    );
+    const playableTracks = spotifyTracks.filter(
+      (track): track is NonNullable<(typeof spotifyTracks)[number]> => Boolean(track),
+    );
+
+    if (playableTracks.length >= 3) {
+      const songs = playableTracks.slice(0, rounds).map((song) => ({
+        ...song,
+        option_years: buildOptionYears(song.correct_year),
+      }));
+
+      return NextResponse.json({ songs });
+    }
+  } catch {
+    // Fall through to mock data when Spotify is unavailable.
+  }
 
   const songs = shuffle(SONGS).slice(0, rounds).map((song) => ({
     ...song,
     preview_url: null,
+    album_art: null,
     option_years: buildOptionYears(song.correct_year),
   }));
 
