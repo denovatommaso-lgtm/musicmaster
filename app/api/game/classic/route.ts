@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { getTracksByEra } from "@/src/lib/spotify";
 
-const MOCK_PREVIEW_URL =
-  "data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YTAAAAAA////AAAA////AAAA////AAAA////AAAA";
-
 type MockSong = {
   id: string;
   title: string;
@@ -79,6 +76,13 @@ export async function GET(request: Request) {
   )
     ? requestedEra
     : "mix";
+  const clientId = process.env.SPOTIFY_CLIENT_ID;
+  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+
+  console.log("[classic api] env check", {
+    clientIdPrefix: clientId ? clientId.slice(0, 4) : null,
+    clientSecretPrefix: clientSecret ? clientSecret.slice(0, 4) : null,
+  });
 
   try {
     console.log("[classic api] request", { rounds, era });
@@ -107,6 +111,11 @@ export async function GET(request: Request) {
 
       return NextResponse.json({ songs });
     }
+
+    console.log("[classic api] spotify path returned too few playable tracks", {
+      playable: playableTracks.length,
+      fallback: true,
+    });
   } catch (error) {
     console.log("[classic api] spotify failed, using mock fallback", {
       message: error instanceof Error ? error.message : "unknown error",
@@ -116,7 +125,7 @@ export async function GET(request: Request) {
 
   const songs = shuffle(SONGS).slice(0, rounds).map((song) => ({
     ...song,
-    preview_url: MOCK_PREVIEW_URL,
+    preview_url: null,
     album_art: null,
     option_years: buildOptionYears(song.correct_year),
   }));

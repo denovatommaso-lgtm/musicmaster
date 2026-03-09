@@ -57,6 +57,12 @@ let cachedToken: { value: string; expiresAt: number } | null = null;
 async function getAccessToken() {
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+  const tokenUrl = "https://accounts.spotify.com/api/token";
+
+  console.log("[spotify] env check", {
+    clientIdPrefix: clientId?.slice(0, 4) ?? null,
+    clientSecretPrefix: clientSecret?.slice(0, 4) ?? null,
+  });
 
   if (!clientId || !clientSecret) {
     throw new Error("Spotify credentials are missing.");
@@ -67,7 +73,12 @@ async function getAccessToken() {
   }
 
   const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-  const response = await fetch("https://accounts.spotify.com/api/token", {
+  console.log("[spotify] token request config", {
+    url: tokenUrl,
+    authHeaderPrefix: `Basic ${basicAuth.slice(0, 12)}`,
+  });
+
+  const response = await fetch(tokenUrl, {
     method: "POST",
     headers: {
       Authorization: `Basic ${basicAuth}`,
@@ -77,11 +88,21 @@ async function getAccessToken() {
     cache: "no-store",
   });
 
+  console.log("[spotify] token response status", response.status);
+
   if (!response.ok) {
+    const body = await response.text();
+    console.log("[spotify] token response body", body);
     throw new Error(`Spotify token request failed with ${response.status}.`);
   }
 
   const data = (await response.json()) as SpotifyTokenResponse;
+  console.log("[spotify] token response body", data);
+  console.log("[spotify] token fetch succeeded", {
+    status: response.status,
+    tokenPrefix: data.access_token.slice(0, 12),
+    expiresIn: data.expires_in,
+  });
   cachedToken = {
     value: data.access_token,
     expiresAt: Date.now() + (data.expires_in - 60) * 1000,
@@ -118,20 +139,51 @@ async function spotifySearch(query: string, limit: number) {
   url.searchParams.set("type", "track");
   url.searchParams.set("market", "US");
   url.searchParams.set("limit", String(limit));
+  console.log("[spotify] search request", {
+    query,
+    limit,
+    url: url.toString(),
+  });
 
-  const response = await fetch(url, {
+  const searchResponse = await fetch(url, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
     cache: "no-store",
   });
 
-  if (!response.ok) {
-    throw new Error(`Spotify search failed with ${response.status}.`);
+  console.log("[spotify] search response status", searchResponse.status);
+
+  if (!searchResponse.ok) {
+    const body = await searchResponse.text();
+    console.log("[spotify] search failed", {
+      query,
+      status: searchResponse.status,
+      body,
+    });
+    throw new Error(`Spotify search failed with ${searchResponse.status}.`);
   }
 
-  const data = (await response.json()) as SpotifySearchResponse;
-  return (data.tracks?.items ?? [])
+  const data = (await searchResponse.json()) as SpotifySearchResponse;
+  console.log(
+    "[spotify] search response body",
+    JSON.stringify(data).slice(0, 500),
+  );
+  const rawItems = data.tracks?.items ?? [];
+  console.log("[spotify] raw search response", {
+    query,
+    limit,
+    totalItems: rawItems.length,
+    previewableItems: rawItems.filter((item) => item.preview_url !== null).length,
+    sample: rawItems.slice(0, 3).map((item) => ({
+      id: item.id,
+      name: item.name,
+      preview_url: item.preview_url,
+      release_date: item.album.release_date,
+    })),
+  });
+
+  return rawItems
     .map((item) => parseTrack(item))
     .filter((track): track is SpotifyTrack => track !== null);
 }
