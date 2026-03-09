@@ -32,7 +32,11 @@ function scoreGuess(guess: number, correctYear: number) {
 
 export function ClassicGameClient({ rounds, era }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const stopTimeoutRef = useRef<number | null>(null);
+  const audioListenersRef = useRef<{
+    timeupdate?: () => void;
+    ended?: () => void;
+    error?: () => void;
+  }>({});
   const [songs, setSongs] = useState<Song[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -99,41 +103,6 @@ export function ClassicGameClient({ rounds, era }: Props) {
   }, [era, rounds]);
 
   useEffect(() => {
-    if (!songs.length) {
-      return;
-    }
-
-    if (currentIndex >= songs.length) {
-      return;
-    }
-
-    const previewUrl = songs[currentIndex]?.preview_url;
-
-    if (!previewUrl) {
-      console.log("Classic mode skipping track without preview", {
-        index: currentIndex,
-        title: songs[currentIndex]?.title ?? null,
-      });
-      setCurrentIndex((current) => current + 1);
-      return;
-    }
-
-    const audio = new Audio(previewUrl);
-    audioRef.current = audio;
-
-    const syncProgress = () => {
-      const seconds = Math.min(audio.currentTime, PREVIEW_DURATION);
-      setProgress((seconds / PREVIEW_DURATION) * 100);
-    };
-
-    const handleEnded = () => {
-      setIsPlaying(false);
-      setProgress(100);
-    };
-
-    audio.addEventListener("timeupdate", syncProgress);
-    audio.addEventListener("ended", handleEnded);
-
     setSelectedYear(null);
     setIsAnswered(false);
     setLastPoints(null);
@@ -141,13 +110,7 @@ export function ClassicGameClient({ rounds, era }: Props) {
     setProgress(0);
 
     return () => {
-      if (stopTimeoutRef.current) {
-        window.clearTimeout(stopTimeoutRef.current);
-      }
-      audio.pause();
-      audio.currentTime = 0;
-      audio.removeEventListener("timeupdate", syncProgress);
-      audio.removeEventListener("ended", handleEnded);
+      destroyAudio();
     };
   }, [currentIndex, songs]);
 
@@ -157,31 +120,105 @@ export function ClassicGameClient({ rounds, era }: Props) {
     [currentIndex, songs.length],
   );
 
-  async function handlePlay() {
+  function destroyAudio() {
     const audio = audioRef.current;
+    const listeners = audioListenersRef.current;
 
-    if (!audio || isAnswered) {
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+
+      if (listeners.timeupdate) {
+        audio.removeEventListener("timeupdate", listeners.timeupdate);
+      }
+
+      if (listeners.ended) {
+        audio.removeEventListener("ended", listeners.ended);
+      }
+
+      if (listeners.error) {
+        audio.removeEventListener("error", listeners.error);
+      }
+    }
+
+    audioRef.current = null;
+    audioListenersRef.current = {};
+  }
+
+  async function handlePlay() {
+    const previewUrl = song?.preview_url ?? null;
+
+    if (!song || isAnswered) {
       return;
     }
 
-    if (isPlaying) {
-      audio.pause();
+    if (isPlaying && audioRef.current) {
+      audioRef.current.pause();
       setIsPlaying(false);
       return;
     }
 
-    audio.currentTime = 0;
+    console.log("Classic mode preview url", {
+      title: song.title,
+      previewUrl,
+    });
+
+    if (!previewUrl) {
+      console.error("Classic mode preview missing", {
+        title: song.title,
+        id: song.id,
+      });
+      setError("This track does not have a playable preview.");
+      return;
+    }
+
+    destroyAudio();
     setProgress(0);
+    setError("");
 
     try {
-      await audio.play();
-      setIsPlaying(true);
-      stopTimeoutRef.current = window.setTimeout(() => {
-        audio.pause();
-        audio.currentTime = 0;
+      const audio = new Audio(previewUrl);
+      audio.volume = 1;
+      console.log("Classic mode audio created", {
+        title: song.title,
+        src: audio.src,
+      });
+
+      const syncProgress = () => {
+        const seconds = Math.min(audio.currentTime, PREVIEW_DURATION);
+        setProgress((seconds / PREVIEW_DURATION) * 100);
+      };
+
+      const handleEnded = () => {
         setIsPlaying(false);
-      }, PREVIEW_DURATION * 1000);
-    } catch {
+        setProgress(100);
+      };
+
+      const handleError = () => {
+        console.error("Classic mode audio element error", {
+          title: song.title,
+          src: audio.src,
+        });
+        setIsPlaying(false);
+      };
+
+      audio.addEventListener("timeupdate", syncProgress);
+      audio.addEventListener("ended", handleEnded);
+      audio.addEventListener("error", handleError);
+      audioRef.current = audio;
+      audioListenersRef.current = {
+        timeupdate: syncProgress,
+        ended: handleEnded,
+        error: handleError,
+      };
+
+      await audio.play();
+      console.log("Classic mode audio play resolved", {
+        title: song.title,
+      });
+      setIsPlaying(true);
+    } catch (error) {
+      console.error("Audio play failed:", error);
       setError("Preview could not be played on this device.");
     }
   }
@@ -196,7 +233,7 @@ export function ClassicGameClient({ rounds, era }: Props) {
     setLastPoints(earned);
     setIsAnswered(true);
     setIsPlaying(false);
-    audioRef.current?.pause();
+    destroyAudio();
   }
 
   function handleNextRound() {
