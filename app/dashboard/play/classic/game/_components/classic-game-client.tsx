@@ -47,6 +47,7 @@ export function ClassicGameClient({ rounds, era }: Props) {
   const [progress, setProgress] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [playbackError, setPlaybackError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -108,6 +109,7 @@ export function ClassicGameClient({ rounds, era }: Props) {
     setLastPoints(null);
     setIsPlaying(false);
     setProgress(0);
+    setPlaybackError("");
 
     return () => {
       destroyAudio();
@@ -115,10 +117,23 @@ export function ClassicGameClient({ rounds, era }: Props) {
   }, [currentIndex, songs]);
 
   const song = songs[currentIndex];
+  const hasPreview = Boolean(song?.preview_url?.trim());
   const isComplete = useMemo(
     () => songs.length > 0 && currentIndex >= songs.length,
     [currentIndex, songs.length],
   );
+
+  useEffect(() => {
+    if (!song) {
+      return;
+    }
+
+    console.log("Classic mode current song", {
+      title: song.title,
+      previewUrl: song.preview_url,
+      round: currentIndex + 1,
+    });
+  }, [currentIndex, song]);
 
   function destroyAudio() {
     const audio = audioRef.current;
@@ -153,32 +168,39 @@ export function ClassicGameClient({ rounds, era }: Props) {
     }
 
     if (isPlaying && audioRef.current) {
+      console.log("Classic mode audio pause requested", {
+        title: song.title,
+        previewUrl,
+      });
       audioRef.current.pause();
       setIsPlaying(false);
+      setPlaybackError("");
       return;
     }
 
-    console.log("Classic mode preview url", {
+    console.log("Classic mode audio attempt", {
       title: song.title,
       previewUrl,
     });
 
-    if (!previewUrl) {
+    if (!previewUrl?.trim()) {
       console.error("Classic mode preview missing", {
         title: song.title,
         id: song.id,
+        previewUrl,
       });
-      setError("This track does not have a playable preview.");
+      setPlaybackError("Preview unavailable for this track.");
       return;
     }
 
     destroyAudio();
     setProgress(0);
-    setError("");
+    setPlaybackError("");
 
     try {
       const audio = new Audio(previewUrl);
       audio.volume = 1;
+      audio.preload = "none";
       console.log("Classic mode audio created", {
         title: song.title,
         src: audio.src,
@@ -190,6 +212,10 @@ export function ClassicGameClient({ rounds, era }: Props) {
       };
 
       const handleEnded = () => {
+        console.log("Classic mode audio ended", {
+          title: song.title,
+          previewUrl,
+        });
         setIsPlaying(false);
         setProgress(100);
       };
@@ -198,8 +224,13 @@ export function ClassicGameClient({ rounds, era }: Props) {
         console.error("Classic mode audio element error", {
           title: song.title,
           src: audio.src,
+          previewUrl,
+          networkState: audio.networkState,
+          readyState: audio.readyState,
+          errorCode: audio.error?.code ?? null,
         });
         setIsPlaying(false);
+        setPlaybackError("Preview could not be played on this device.");
       };
 
       audio.addEventListener("timeupdate", syncProgress);
@@ -212,14 +243,25 @@ export function ClassicGameClient({ rounds, era }: Props) {
         error: handleError,
       };
 
+      console.log("Classic mode audio play() start", {
+        title: song.title,
+        previewUrl,
+      });
       await audio.play();
       console.log("Classic mode audio play resolved", {
         title: song.title,
+        previewUrl,
       });
       setIsPlaying(true);
-    } catch (error) {
-      console.error("Audio play failed:", error);
-      setError("Preview could not be played on this device.");
+    } catch (playError) {
+      console.error("Classic mode audio play failed", {
+        title: song.title,
+        previewUrl,
+        error: playError,
+      });
+      setIsPlaying(false);
+      setPlaybackError("Preview could not be played on this device.");
+      destroyAudio();
     }
   }
 
@@ -237,6 +279,7 @@ export function ClassicGameClient({ rounds, era }: Props) {
   }
 
   function handleNextRound() {
+    setPlaybackError("");
     setCurrentIndex((current) => current + 1);
   }
 
@@ -362,7 +405,14 @@ export function ClassicGameClient({ rounds, era }: Props) {
             <button
               type="button"
               onClick={handlePlay}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#FF4D8D,#ff6ba1)] text-white shadow-[0_10px_25px_rgba(255,77,141,0.25)] transition hover:scale-[1.02]"
+              disabled={!hasPreview || isAnswered}
+              aria-label={isPlaying ? "Pause preview" : "Play preview"}
+              aria-pressed={isPlaying}
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-[0_10px_25px_rgba(255,77,141,0.25)] transition ${
+                !hasPreview || isAnswered
+                  ? "cursor-not-allowed bg-white/10 text-white/35 shadow-none"
+                  : "bg-[linear-gradient(135deg,#FF4D8D,#ff6ba1)] hover:scale-[1.02]"
+              }`}
             >
               <svg
                 aria-hidden="true"
@@ -370,7 +420,11 @@ export function ClassicGameClient({ rounds, era }: Props) {
                 className="h-5 w-5"
                 fill="currentColor"
               >
-                <path d="M8 6v12l10-6-10-6Z" />
+                {isPlaying ? (
+                  <path d="M7 6h3v12H7zm7 0h3v12h-3z" />
+                ) : (
+                  <path d="M8 6v12l10-6-10-6Z" />
+                )}
               </svg>
             </button>
 
@@ -382,10 +436,20 @@ export function ClassicGameClient({ rounds, era }: Props) {
                 />
               </div>
               <p className="mt-2 text-xs text-white/60">
-                {isPlaying ? "Playing..." : "Tap to play"}
+                {!hasPreview
+                  ? "Preview unavailable"
+                  : isPlaying
+                    ? "Playing preview..."
+                    : "Tap to play"}
               </p>
             </div>
           </div>
+
+          {playbackError || !hasPreview ? (
+            <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs font-medium text-[#ffd0e1]">
+              {playbackError || "Preview unavailable for this track."}
+            </div>
+          ) : null}
         </div>
       </section>
 

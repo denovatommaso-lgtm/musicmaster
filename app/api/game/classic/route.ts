@@ -1,36 +1,15 @@
 import { NextResponse } from "next/server";
 import { getTracksByEra } from "@/src/lib/spotify";
 
-type MockSong = {
+type ClassicSong = {
   id: string;
   title: string;
   artist: string;
+  preview_url: string | null;
   correct_year: number;
-  album_art?: string | null;
+  option_years: number[];
+  album_art: string | null;
 };
-
-const SONGS: MockSong[] = [
-  { id: "1", title: "Billie Jean", artist: "Michael Jackson", correct_year: 1983 },
-  { id: "2", title: "Like a Prayer", artist: "Madonna", correct_year: 1989 },
-  { id: "3", title: "Smells Like Teen Spirit", artist: "Nirvana", correct_year: 1991 },
-  { id: "4", title: "Wonderwall", artist: "Oasis", correct_year: 1995 },
-  { id: "5", title: "Hey Ya!", artist: "Outkast", correct_year: 2003 },
-  { id: "6", title: "Rolling in the Deep", artist: "Adele", correct_year: 2010 },
-  { id: "7", title: "Blinding Lights", artist: "The Weeknd", correct_year: 2019 },
-  { id: "8", title: "Levitating", artist: "Dua Lipa", correct_year: 2020 },
-  { id: "9", title: "Take on Me", artist: "a-ha", correct_year: 1985 },
-  { id: "10", title: "Poker Face", artist: "Lady Gaga", correct_year: 2008 },
-  { id: "11", title: "Umbrella", artist: "Rihanna", correct_year: 2007 },
-  { id: "12", title: "I Wanna Dance with Somebody", artist: "Whitney Houston", correct_year: 1987 },
-  { id: "13", title: "Shape of You", artist: "Ed Sheeran", correct_year: 2017 },
-  { id: "14", title: "Teenage Dream", artist: "Katy Perry", correct_year: 2010 },
-  { id: "15", title: "Get Lucky", artist: "Daft Punk", correct_year: 2013 },
-  { id: "16", title: "Toxic", artist: "Britney Spears", correct_year: 2003 },
-  { id: "17", title: "Since U Been Gone", artist: "Kelly Clarkson", correct_year: 2004 },
-  { id: "18", title: "Mr. Brightside", artist: "The Killers", correct_year: 2004 },
-  { id: "19", title: "No Scrubs", artist: "TLC", correct_year: 1999 },
-  { id: "20", title: "Dreams", artist: "Fleetwood Mac", correct_year: 1977 },
-];
 
 function shuffle<T>(items: T[]) {
   const copy = [...items];
@@ -76,64 +55,102 @@ export async function GET(request: Request) {
   )
     ? requestedEra
     : "mix";
-  const clientId = process.env.SPOTIFY_CLIENT_ID;
-  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-
-  console.log("[classic api] env check", {
-    clientIdPrefix: clientId ? clientId.slice(0, 4) : null,
-    clientSecretPrefix: clientSecret ? clientSecret.slice(0, 4) : null,
-  });
-
   try {
     console.log("[classic api] request", { rounds, era });
-    const spotifyTracks = await getTracksByEra(
-      era as "60s" | "70s" | "80s" | "90s" | "2000s" | "2010s" | "2020s" | "mix",
-      rounds,
-    );
-    const playableTracks = spotifyTracks.filter(
-      (track): track is NonNullable<(typeof spotifyTracks)[number]> => Boolean(track),
-    );
-    console.log("[classic api] spotify tracks", {
-      fetched: spotifyTracks.length,
-      playable: playableTracks.length,
-    });
+    const normalizedEra = era as
+      | "60s"
+      | "70s"
+      | "80s"
+      | "90s"
+      | "2000s"
+      | "2010s"
+      | "2020s"
+      | "mix";
+    const fetchTargets = [
+      Math.max(rounds * 3, 12),
+      Math.max(rounds * 5, 20),
+      Math.max(rounds * 7, 30),
+    ];
+    const playableById = new Map<string, ClassicSong>();
 
-    if (playableTracks.length >= 3) {
-      const songs = playableTracks.slice(0, rounds).map((song) => ({
-        ...song,
-        option_years: buildOptionYears(song.correct_year),
-      }));
-
-      console.log("[classic api] returning spotify songs", {
-        count: songs.length,
-        firstSong: songs[0]?.title ?? null,
+    for (const target of fetchTargets) {
+      const spotifyTracks = await getTracksByEra(normalizedEra, target);
+      const validPreviewTracks = spotifyTracks.filter((track) => {
+        const previewUrl =
+          typeof track.preview_url === "string" ? track.preview_url.trim() : "";
+        return previewUrl.length > 0;
       });
 
-      return NextResponse.json({ songs });
+      console.log("[classic api] spotify candidate batch", {
+        requested: target,
+        fetched: spotifyTracks.length,
+        withPreview: validPreviewTracks.length,
+        withoutPreview: spotifyTracks.length - validPreviewTracks.length,
+      });
+
+      for (const track of validPreviewTracks) {
+        if (playableById.has(track.id)) {
+          continue;
+        }
+
+        playableById.set(track.id, {
+          id: track.id,
+          title: track.title,
+          artist: track.artist,
+          preview_url: track.preview_url.trim(),
+          correct_year: track.correct_year,
+          option_years: buildOptionYears(track.correct_year),
+          album_art: track.album_art,
+        });
+      }
+
+      console.log("[classic api] accumulated playable tracks", {
+        uniquePlayable: playableById.size,
+        requestedRounds: rounds,
+      });
+
+      if (playableById.size >= rounds) {
+        break;
+      }
     }
 
-    console.log("[classic api] spotify path returned too few playable tracks", {
-      playable: playableTracks.length,
-      fallback: true,
+    const songs = shuffle([...playableById.values()]).slice(0, rounds);
+
+    if (songs.length < rounds) {
+      console.error("[classic api] not enough playable spotify tracks", {
+        requestedRounds: rounds,
+        playableSongs: songs.length,
+        era,
+      });
+
+      return NextResponse.json(
+        {
+          error:
+            "Not enough playable Spotify previews were found for this Classic Mode game. Please try a different era or try again.",
+        },
+        { status: 503 },
+      );
+    }
+
+    console.log("[classic api] returning spotify songs", {
+      count: songs.length,
+      requestedRounds: rounds,
+      era,
+      firstSong: songs[0]?.title ?? null,
     });
+
+    return NextResponse.json({ songs });
   } catch (error) {
-    console.log("[classic api] spotify failed, using mock fallback", {
+    console.error("[classic api] spotify request failed", {
       message: error instanceof Error ? error.message : "unknown error",
     });
-    // Fall through to mock data when Spotify is unavailable.
+
+    return NextResponse.json(
+      {
+        error:
+          "Classic Mode could not load enough playable Spotify previews right now. Please try again in a moment.",
+      },
+      { status: 503 },
+    );
   }
-
-  const songs = shuffle(SONGS).slice(0, rounds).map((song) => ({
-    ...song,
-    preview_url: null,
-    album_art: null,
-    option_years: buildOptionYears(song.correct_year),
-  }));
-
-  console.log("[classic api] returning mock songs", {
-    count: songs.length,
-    firstSong: songs[0]?.title ?? null,
-  });
-
-  return NextResponse.json({ songs });
 }
